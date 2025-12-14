@@ -1,0 +1,35 @@
+{
+  "name": "telegram-boty",
+  "version": "0.1.0",
+  "description": "A Telegram bot to have fun w/ friends",
+  "keywords": [
+    "telegram",
+    "bot"
+  ],
+  "homepage": "https://github.com/fedoteh/telegram-boty#readme",
+  "bugs": {
+    "url": "https://github.com/fedoteh/telegram-boty/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fedoteh/telegram-boty.git"
+  },
+  "license": "ISC",
+  "author": "Fedoteh",
+  "type": "module",
+  "main": "dist/bot.js",
+  "scripts": {
+    "dev": "tsx watch src/bot.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/bot.js"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "grammy": "^1.38.4"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.2",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3"
+  }
+}
