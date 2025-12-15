@@ -1,0 +1,18 @@
+{
+  "defaults": {
+    "editedMessageReply": "Alguien editó un mensaje!",
+    "customCommandReplies": [
+      { "part1": "Sale una", "part2": "o se bajan?" }
+    ]
+  },
+  "squads": {
+    "dotita": {
+      "label": "Dotita",
+      "customFunNames": ["Dotita"],
+      "members": [
+        { "handle": "@example1" },
+        { "handle": "@example2" }
+      ]
+    }
+  }
+}

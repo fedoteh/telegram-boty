@@ -4,3 +4,7 @@ dist/
 .env.*
 !.env.example
 .vscode/
+
+# Ignore JSON config files
+config/*.json
+!config/*.example.json

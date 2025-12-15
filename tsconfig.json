@@ -10,6 +10,7 @@
     "module": "nodenext",
     "target": "ES2022",
     "moduleResolution": "NodeNext",
+    "resolveJsonModule": true,
     "types": ["node"],
     "lib": ["ES2022"],
 
@@ -35,5 +36,7 @@
     "noUncheckedSideEffectImports": true,
     "moduleDetection": "force",
     "skipLibCheck": true
-  }
+  },
+  "include": ["src"],
+  "exclude": ["node_modules", "dist", "eslint.config.ts"]
 }
