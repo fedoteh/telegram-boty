@@ -1,4 +1,5 @@
 import type { Bot } from "grammy";
+import { hasMessageTextChanged } from "../utils/message-text-cache.js";
 
 type EditedMessageOptions = {
   replyText?: string;
@@ -16,6 +17,11 @@ const editedMessageListener = (bot: Bot, options: EditedMessageOptions = {}) => 
 
     // Skip media-only edits so the bot only reacts to text changes
     if (!editedMessage?.text) {
+      return;
+    }
+
+    const textChanged = hasMessageTextChanged(ctx.chat?.id, editedMessage.message_id, editedMessage.text);
+    if (!textChanged) {
       return;
     }
 
