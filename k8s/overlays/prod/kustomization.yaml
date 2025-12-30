@@ -6,7 +6,8 @@ namespace: apps
 resources:
   - ../../base
   - sealedsecret-bot-token.yaml
+  - sealedsecret-bot-config.yaml
 
 images:
   - name: fedoteh/telegram-boty
-    newTag: "v0.1.2"
+    newTag: "v0.1.3"

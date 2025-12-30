@@ -32,5 +32,16 @@ spec:
               memory: 256Mi
           securityContext:
             allowPrivilegeEscalation: false
+          volumeMounts:
+            - name: bot-config
+              mountPath: /app/config/bot-config.json
+              subPath: bot-config.json
+              readOnly: true
+      volumes:
+        - name: bot-config
+          secret:
+            secretName: telegram-bot-config
       securityContext:
         runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
