@@ -15,4 +15,9 @@ ENV NODE_ENV=production
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/config ./config
+
+RUN addgroup -S -g 10001 app && adduser -S -u 10001 -G app app
+
+USER 10001:10001
+
 CMD ["node", "dist/bot.js"]
