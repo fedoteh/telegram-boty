@@ -8,6 +8,10 @@ export type CustomCommandReply = {
 export type DefaultsConfig = {
   editedMessageReply?: string;
   customCommandReplies?: CustomCommandReply[];
+  snoozeSettings?: {
+    snoozeHourRange: [number, number];
+    snoozeCustomResponses?: string[];
+  };
 };
 
 export type BotConfig = {

@@ -15,11 +15,16 @@ const formatReply = (
   reply: CustomCommandReply | undefined,
   gameName: string,
   mentions: string,
+  snoozeSettings?: DefaultsConfig["snoozeSettings"],
 ): string => {
   if (!reply) {
     return `Miembros configurados para ${gameName}: ${mentions}`;
   }
+  const currentHour = new Date().getHours();
 
+  if (snoozeSettings !== undefined && currentHour >= snoozeSettings.snoozeHourRange[0] && currentHour <= snoozeSettings.snoozeHourRange[1]){
+    return pickRandom(snoozeSettings.snoozeCustomResponses) ?? "Andá a dormir! 🤣";
+  }
   return `${reply.part1} ${gameName} ${mentions} ${reply.part2}?`;
 };
 
@@ -46,7 +51,7 @@ export const registerSquadCommands = (
       const customGameName = pickRandom(squad.customFunNames) ?? squad.label;
       const customReply = pickRandom(defaults.customCommandReplies);
 
-      await ctx.reply(formatReply(customReply, customGameName, mentions));
+      await ctx.reply(formatReply(customReply, customGameName, mentions, defaults.snoozeSettings) );
     });
   });
 };

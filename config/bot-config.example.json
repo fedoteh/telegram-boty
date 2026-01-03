@@ -3,7 +3,13 @@
     "editedMessageReply": "Alguien editó un mensaje!",
     "customCommandReplies": [
       { "part1": "Sale una", "part2": "o se bajan?" }
-    ]
+    ],
+    "snoozeSettings": {
+      "snoozeHourRange": [1, 10],
+      "snoozeCustomResponses": [
+        "Andá a dormir! 🤣"
+      ]
+    }
   },
   "squads": {
     "dotita": {
