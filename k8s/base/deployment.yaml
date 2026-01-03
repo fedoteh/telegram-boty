@@ -40,7 +40,7 @@ spec:
       volumes:
         - name: bot-config
           secret:
-            secretName: telegram-bot-config
+            secretName: telegram-bot-secrets
       securityContext:
         runAsNonRoot: true
         runAsUser: 10001
