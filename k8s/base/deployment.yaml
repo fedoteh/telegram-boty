@@ -19,6 +19,8 @@ spec:
           image: fedoteh/telegram-boty:latest
           imagePullPolicy: IfNotPresent
           env:
+            - name: TZ
+              value: "America/Argentina/Buenos_Aires"
             - name: BOT_TOKEN
               valueFrom:
                 secretKeyRef:
