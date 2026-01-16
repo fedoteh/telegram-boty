@@ -18,19 +18,22 @@ const __dirname = path.dirname(__filename);
 // config file is baked into image at /app/config/bot-config.json
 const CONFIG_PATH = path.resolve(__dirname, "../../config/bot-config.json");
 
+const isValidBotConfig = (data: unknown): data is BotConfig =>
+  typeof data === "object" &&
+  data !== null &&
+  "squads" in data &&
+  "defaults" in data;
+
 export const loadBotConfig = (): LoadedConfig => {
   const raw = fs.readFileSync(CONFIG_PATH, "utf-8");
-  const botConfigData = JSON.parse(raw) as Partial<BotConfig>;
+  const botConfigData: unknown = JSON.parse(raw);
 
-  if (!botConfigData?.squads || !botConfigData?.defaults) {
+  if (!isValidBotConfig(botConfigData)) {
     throw new Error(`Missing configuration file data at ${CONFIG_PATH}`);
   }
 
-  const botConfig = botConfigData as BotConfig;
-  const squads = buildSquadMap(botConfig.squads);
-
   return {
-    squads,
-    defaults: botConfig.defaults,
+    squads: buildSquadMap(botConfigData.squads),
+    defaults: botConfigData.defaults,
   };
 };
