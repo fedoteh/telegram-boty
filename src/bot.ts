@@ -20,3 +20,4 @@ registerSquadCommands(bot, squads, defaults);
 registerListeners(bot, defaults);
 
 bot.start();
+console.log("Bot started successfully 🤖, niru niru lcdtm");
