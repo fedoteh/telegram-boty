@@ -25,9 +25,10 @@ const editedMessageListener = (bot: Bot, options: EditedMessageOptions = {}) => 
       return;
     }
 
-    await ctx.reply(replyText, {
-      reply_parameters: { message_id: editedMessage.message_id },
-    });
+    await ctx.api.setMessageReaction(ctx.chat?.id, editedMessage.message_id, [
+        { type: "emoji", emoji: "🌚" },
+    ]);
+    
   });
 };
 
