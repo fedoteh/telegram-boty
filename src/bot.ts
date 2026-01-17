@@ -17,7 +17,7 @@ const bot = new Bot(token);
 const { squads, defaults } = loadBotConfig();
 
 registerSquadCommands(bot, squads, defaults);
-registerListeners(bot, defaults);
+registerListeners(bot);
 
 bot.start();
 console.log("Bot started successfully 🤖, niru niru lcdtm");
