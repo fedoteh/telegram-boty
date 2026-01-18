@@ -14,10 +14,10 @@ if (!token) {
 }
 
 const bot = new Bot(token);
-const { squads, defaults } = loadBotConfig();
+const config = loadBotConfig();
 
-registerSquadCommands(bot, squads, defaults);
-registerListeners(bot);
+registerSquadCommands(bot, config.squads, config.defaults);
+registerListeners(bot, config);
 
 bot.start();
 console.log("Bot started successfully 🤖, niru niru lcdtm");
