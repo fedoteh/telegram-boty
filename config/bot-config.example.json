@@ -11,6 +11,17 @@
       ]
     }
   },
+  "stats": {
+    "games": {
+      "dota": {
+        "platform": "steam",
+        "players": [
+          { "handle": "example1", "platformId": "12345678" },
+          { "handle": "example2", "platformId": "87654321" }
+        ]
+      }
+    }
+  },
   "squads": {
     "dotita": {
       "label": "Dotita",

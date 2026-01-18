@@ -1,4 +1,5 @@
 import type { SquadConfig } from "./squads.js";
+import type { StatsConfig } from "./stats.js";
 
 export type CustomCommandReply = {
   part1: string;
@@ -17,4 +18,5 @@ export type DefaultsConfig = {
 export type BotConfig = {
   defaults: DefaultsConfig;
   squads: Record<string, SquadConfig>;
+  stats?: StatsConfig;
 };
