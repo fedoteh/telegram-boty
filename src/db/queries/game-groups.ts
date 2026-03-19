@@ -1,4 +1,4 @@
-import prisma from "../client.js";
+import { getPrisma } from "../client.js";
 
 /**
  * Create a new game group in a Telegram chat.
@@ -11,7 +11,7 @@ export async function createGroup(
   createdBy: bigint,
   creatorUsername?: string,
 ) {
-  return prisma.gameGroup.create({
+  return getPrisma().gameGroup.create({
     data: {
       chatId,
       name: name.toLowerCase(),
@@ -34,7 +34,7 @@ export async function createGroup(
  * Find a game group by chat ID and name (case-insensitive slug).
  */
 export async function getGroup(chatId: bigint, name: string) {
-  return prisma.gameGroup.findUnique({
+  return getPrisma().gameGroup.findUnique({
     where: {
       chatId_name: { chatId, name: name.toLowerCase() },
     },
@@ -46,7 +46,7 @@ export async function getGroup(chatId: bigint, name: string) {
  * List all game groups for a given Telegram chat.
  */
 export async function listGroups(chatId: bigint) {
-  return prisma.gameGroup.findMany({
+  return getPrisma().gameGroup.findMany({
     where: { chatId },
     include: { members: true },
     orderBy: { createdAt: "asc" },
@@ -61,13 +61,15 @@ export async function addMembers(
   groupId: number,
   users: { userId: bigint; username?: string }[],
 ) {
+  const prisma = getPrisma();
   const operations = users.map((u) =>
     prisma.gameGroupMember.upsert({
       where: {
         groupId_userId: { groupId, userId: u.userId },
       },
       update: {
-        username: u.username ?? null,
+        // Only update username if provided, preserve existing role
+        ...(u.username ? { username: u.username } : {}),
       },
       create: {
         groupId,
@@ -87,7 +89,7 @@ export async function addMembers(
  */
 export async function removeMember(groupId: number, userId: bigint) {
   try {
-    return await prisma.gameGroupMember.delete({
+    return await getPrisma().gameGroupMember.delete({
       where: {
         groupId_userId: { groupId, userId },
       },
@@ -102,7 +104,7 @@ export async function removeMember(groupId: number, userId: bigint) {
  * Check whether a given user is an admin of a specific game group.
  */
 export async function isGroupAdmin(groupId: number, userId: bigint) {
-  const member = await prisma.gameGroupMember.findUnique({
+  const member = await getPrisma().gameGroupMember.findUnique({
     where: {
       groupId_userId: { groupId, userId },
     },
@@ -110,4 +112,13 @@ export async function isGroupAdmin(groupId: number, userId: bigint) {
   });
 
   return member?.role === "admin";
+}
+
+/**
+ * Delete a game group and all its members (cascade).
+ */
+export async function deleteGroup(groupId: number) {
+  return getPrisma().gameGroup.delete({
+    where: { id: groupId },
+  });
 }
