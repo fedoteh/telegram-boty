@@ -5,9 +5,11 @@ RUN npm ci
 
 FROM deps AS builder
 COPY tsconfig*.json ./
+COPY prisma.config.ts ./
+COPY prisma ./prisma
 COPY src ./src
 COPY config ./config
-RUN npm run build && npm prune --omit=dev
+RUN npx prisma generate && npm run build && npm prune --omit=dev
 
 FROM node:20-alpine AS runner
 WORKDIR /app
@@ -15,9 +17,11 @@ ENV NODE_ENV=production
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/config ./config
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.ts ./
 
 RUN addgroup -S -g 10001 app && adduser -S -u 10001 -G app app
 
 USER 10001:10001
 
-CMD ["node", "dist/bot.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/bot.js"]
