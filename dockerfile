@@ -9,7 +9,7 @@ COPY prisma.config.ts ./
 COPY prisma ./prisma
 COPY src ./src
 COPY config ./config
-RUN npx prisma generate && npm run build && npm prune --omit=dev
+RUN DATABASE_URL="postgresql://build:build@localhost:5432/build" npx prisma generate && npm run build && npm prune --omit=dev
 
 FROM node:20-alpine AS runner
 WORKDIR /app
