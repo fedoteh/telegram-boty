@@ -8,3 +8,6 @@ dist/
 # Ignore JSON config files
 config/*.json
 !config/*.example.json
+
+# Prisma generated client
+src/generated/

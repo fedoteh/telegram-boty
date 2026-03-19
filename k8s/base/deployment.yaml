@@ -26,6 +26,11 @@ spec:
                 secretKeyRef:
                   name: telegram-bot-secrets
                   key: BOT_TOKEN
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: telegram-bot-secrets
+                  key: DATABASE_URL
           resources:
             requests:
               cpu: 25m

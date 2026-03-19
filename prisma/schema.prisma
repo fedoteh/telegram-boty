@@ -1,0 +1,37 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model GameGroup {
+  id          Int      @id @default(autoincrement())
+  chatId      BigInt
+  name        String   // lowercased slug, e.g. "dotita"
+  displayName String?
+  gameLabel   String
+  createdBy   BigInt   // Telegram user ID of the creator (becomes admin)
+  createdAt   DateTime @default(now())
+
+  members GameGroupMember[]
+
+  @@unique([chatId, name])
+  @@map("game_groups")
+}
+
+model GameGroupMember {
+  id       Int      @id @default(autoincrement())
+  groupId  Int
+  userId   BigInt   // Telegram user ID
+  username String?  // cached @handle
+  role     String   @default("member") // "admin" | "member"
+  addedAt  DateTime @default(now())
+
+  group GameGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@map("game_group_members")
+}
