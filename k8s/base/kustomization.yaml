@@ -3,3 +3,6 @@ kind: Kustomization
 
 resources:
   - deployment.yaml
+  - postgres-statefulset.yaml
+  - postgres-service.yaml
+  - postgres-networkpolicy.yaml
