@@ -56,8 +56,8 @@ const gameGroupCommandListener = (bot: Bot) => {
 
     if (group.members.length === 0) {
       await ctx.reply(
-        `El grupo *${group.name}* no tiene miembros todavía 😕\n\nAgregá gente con \`/add ${group.name} @user\``,
-        { parse_mode: "Markdown" },
+        `El grupo <b>${group.name}</b> no tiene miembros todavía 😕\n\nAgregá gente con <code>/add ${group.name} @user</code>`,
+        { parse_mode: "HTML" },
       );
       return;
     }
@@ -67,8 +67,8 @@ const gameGroupCommandListener = (bot: Bot) => {
       .map((m) => m.username ? `@${m.username}` : `usuario #${m.userId}`)
       .join(", ");
 
-    await ctx.reply(`🎮 *${group.displayName ?? group.name}*\n\nA jugar! ${mentions}`, {
-      parse_mode: "Markdown",
+    await ctx.reply(`🎮 <b>${group.displayName ?? group.name}</b>\n\nA jugar! ${mentions}`, {
+      parse_mode: "HTML",
     });
   });
 };
