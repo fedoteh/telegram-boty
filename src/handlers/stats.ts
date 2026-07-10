@@ -9,22 +9,57 @@ export type StatsResult = {
   platform?: string;
 };
 
+const buildHelpMessage = (statsConfig: StatsConfig | undefined): string => {
+  const lines = [
+    "📊 *Stats command*",
+    "",
+    "Usage:",
+    "• `/stats <game> <username>` — fetch stats for a player",
+    "• `/stats help` — show this message",
+    "",
+    "Example: `/stats dota Fefi`",
+  ];
+
+  const games = statsConfig?.games;
+  if (games && Object.keys(games).length > 0) {
+    lines.push("", "*Available games and players:*");
+    for (const [gameName, gameConfig] of Object.entries(games)) {
+      const players = gameConfig.players.map((p) => p.handle).join(", ") || "(no players configured)";
+      lines.push(`• *${gameName}* (${gameConfig.platform}): ${players}`);
+    }
+  } else {
+    lines.push("", "No games are configured yet.");
+  }
+
+  return lines.join("\n");
+};
+
 /**
  * Parses the stats command arguments and returns player info for fetching stats
  * Format: <game> <handle>
  * Example: dota Fedoteh
+ * Special: `help` shows usage and configured games/players.
  */
 export const parseStatsArgs = (
   args: string,
   statsConfig: StatsConfig | undefined
 ): StatsResult => {
+  const trimmed = args.trim();
+
+  if (trimmed === "" || trimmed.toLowerCase() === "help") {
+    return {
+      success: false,
+      message: buildHelpMessage(statsConfig),
+    };
+  }
+
   const argsRegex = /^(\S+)\s+(\S+)$/i;
-  const match = args.trim().match(argsRegex);
+  const match = trimmed.match(argsRegex);
 
   if (!match) {
     return {
       success: false,
-      message: "Usage: /stats <game> <username>\nExample: /stats dota Kossay",
+      message: "Usage: /stats <game> <username>\nExample: /stats dota Kossay\nType /stats help for more info.",
     };
   }
 

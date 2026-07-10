@@ -41,6 +41,79 @@ type OpenDotaTotalsResponse = {
   sum: number;
 };
 
+type OpenDotaHeroResponse = {
+  id: number;
+  localized_name: string;
+};
+
+type OpenDotaGameModeEntry = {
+  id: number;
+  name: string;
+  balanced?: boolean;
+};
+
+type OpenDotaGameModeResponse = Record<string, OpenDotaGameModeEntry>;
+
+let heroesCache: Map<number, string> | null = null;
+let gameModesCache: Map<number, string> | null = null;
+
+/**
+ * Fetches the hero list from OpenDota and caches it in memory.
+ * Constants change rarely, so a single fetch per process is enough.
+ */
+const fetchHeroes = async (): Promise<Map<number, string>> => {
+  if (heroesCache) return heroesCache;
+  try {
+    const response = await fetch(`${OPENDOTA_API_BASE}/heroes`);
+    if (!response.ok) return new Map();
+
+    const data = (await response.json()) as OpenDotaHeroResponse[];
+    const map = new Map<number, string>();
+    for (const hero of data) {
+      map.set(hero.id, hero.localized_name);
+    }
+    heroesCache = map;
+    return map;
+  } catch {
+    return new Map();
+  }
+};
+
+/**
+ * Converts a raw OpenDota game_mode name (e.g. "game_mode_all_pick")
+ * into a human-friendly label (e.g. "All Pick").
+ */
+const prettifyGameModeName = (raw: string): string =>
+  raw
+    .replace(/^game_mode_/, "")
+    .split("_")
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+
+/**
+ * Fetches the game_mode constants from OpenDota and caches them.
+ */
+const fetchGameModes = async (): Promise<Map<number, string>> => {
+  if (gameModesCache) return gameModesCache;
+  try {
+    const response = await fetch(`${OPENDOTA_API_BASE}/constants/game_mode`);
+    if (!response.ok) return new Map();
+
+    const data = (await response.json()) as OpenDotaGameModeResponse;
+    const map = new Map<number, string>();
+    for (const entry of Object.values(data)) {
+      if (entry?.id !== undefined && entry.name) {
+        map.set(entry.id, prettifyGameModeName(entry.name));
+      }
+    }
+    gameModesCache = map;
+    return map;
+  } catch {
+    return new Map();
+  }
+};
+
 /**
  * Fetches player profile from OpenDota API
  */
@@ -222,11 +295,13 @@ const formatPlaytime = (seconds: number): string => {
 export const fetchDotaStats = async (
   accountId: string
 ): Promise<{ success: boolean; message: string }> => {
-  const [profile, winLoss, recentMatches, totals] = await Promise.all([
+  const [profile, winLoss, recentMatches, totals, heroes, gameModes] = await Promise.all([
     fetchPlayerProfile(accountId),
     fetchWinLoss(accountId),
     fetchRecentMatches(accountId, 20),
     fetchTotals(accountId),
+    fetchHeroes(),
+    fetchGameModes(),
   ]);
 
   if (!profile) {
@@ -288,9 +363,13 @@ export const fetchDotaStats = async (
       const result = won ? "✅" : "❌";
       const kda = `${match.kills}/${match.deaths}/${match.assists}`;
       const duration = formatDuration(match.duration);
+      const hero = heroes.get(match.heroId) ?? `Hero #${match.heroId}`;
+      const mode = gameModes.get(match.gameMode) ?? `Mode #${match.gameMode}`;
 
-      message += `${index + 1}. ${result} KDA: ${kda} (${duration})\n`;
+      message += `${index + 1}. ${result} *${hero}* · ${mode} — KDA: ${kda} (${duration})\n`;
     });
+
+    message += `\n🔗 [Ver todas las partidas](https://www.opendota.com/players/${accountId}/matches)`;
   }
 
   return {

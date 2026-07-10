@@ -1,5 +1,6 @@
 import type { Bot } from "grammy";
 import { createGroup, getGroup } from "../db/queries/game-groups.js";
+import { ensureGroupChat } from "../utils/chat-type.js";
 
 /**
  * /create <groupName>
@@ -9,6 +10,8 @@ import { createGroup, getGroup } from "../db/queries/game-groups.js";
  */
 const createListener = (bot: Bot) => {
   bot.command("create", async (ctx) => {
+    if (!(await ensureGroupChat(ctx))) return;
+
     const chatId = ctx.chat?.id;
     const creatorId = ctx.from?.id;
     const creatorUsername = ctx.from?.username;

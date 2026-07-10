@@ -1,5 +1,6 @@
 import type { Bot } from "grammy";
 import { getGroup, isGroupAdmin, deleteGroup } from "../db/queries/game-groups.js";
+import { ensureGroupChat } from "../utils/chat-type.js";
 
 /**
  * /delete <groupName>
@@ -8,6 +9,8 @@ import { getGroup, isGroupAdmin, deleteGroup } from "../db/queries/game-groups.j
  */
 const deleteListener = (bot: Bot) => {
   bot.command("delete", async (ctx) => {
+    if (!(await ensureGroupChat(ctx))) return;
+
     const chatId = ctx.chat?.id;
     const callerId = ctx.from?.id;
     if (!chatId || !callerId) return;

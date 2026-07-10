@@ -1,5 +1,6 @@
 import type { Bot } from "grammy";
 import { getGroup, addMembers } from "../db/queries/game-groups.js";
+import { ensureGroupChat } from "../utils/chat-type.js";
 
 /**
  * Generate a deterministic placeholder userId from a username.
@@ -22,6 +23,8 @@ function usernameToPlaceholderId(username: string): bigint {
  */
 const addListener = (bot: Bot) => {
   bot.command("add", async (ctx) => {
+    if (!(await ensureGroupChat(ctx))) return;
+
     const chatId = ctx.chat?.id;
     if (!chatId) return;
 

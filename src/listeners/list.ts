@@ -1,5 +1,6 @@
 import type { Bot } from "grammy";
 import { listGroups } from "../db/queries/game-groups.js";
+import { ensureGroupChat } from "../utils/chat-type.js";
 
 /**
  * /list
@@ -8,6 +9,8 @@ import { listGroups } from "../db/queries/game-groups.js";
  */
 const listListener = (bot: Bot) => {
   bot.command("list", async (ctx) => {
+    if (!(await ensureGroupChat(ctx))) return;
+
     const chatId = ctx.chat?.id;
     if (!chatId) return;
 

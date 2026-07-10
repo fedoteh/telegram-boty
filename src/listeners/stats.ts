@@ -9,7 +9,7 @@ const statsListener = (bot: Bot, config: LoadedConfig) => {
     const result = parseStatsArgs(args, config.stats);
 
     if (!result.success || !result.platformId || !result.game) {
-      await ctx.reply(result.message);
+      await ctx.reply(result.message, { parse_mode: "Markdown" });
       return;
     }
 

@@ -115,6 +115,64 @@ export async function isGroupAdmin(groupId: number, userId: bigint) {
 }
 
 /**
+ * Remove a member from a group, transferring admin to the oldest remaining
+ * member if the departing user was the admin. If they were the only member,
+ * the group itself is deleted. Returns a summary of what happened.
+ */
+export async function removeMemberWithSuccession(
+  groupId: number,
+  userId: bigint,
+): Promise<
+  | { removed: false }
+  | { removed: true; wasAdmin: boolean; groupDeleted: boolean; newAdmin?: { userId: bigint; username: string | null } }
+> {
+  const prisma = getPrisma();
+
+  return prisma.$transaction(async (tx) => {
+    const member = await tx.gameGroupMember.findUnique({
+      where: { groupId_userId: { groupId, userId } },
+      select: { role: true },
+    });
+
+    if (!member) return { removed: false } as const;
+
+    await tx.gameGroupMember.delete({
+      where: { groupId_userId: { groupId, userId } },
+    });
+
+    const wasAdmin = member.role === "admin";
+
+    if (!wasAdmin) {
+      return { removed: true, wasAdmin: false, groupDeleted: false } as const;
+    }
+
+    // Departing user was the admin — pick a successor or delete the group.
+    const successor = await tx.gameGroupMember.findFirst({
+      where: { groupId },
+      orderBy: { addedAt: "asc" },
+      select: { userId: true, username: true },
+    });
+
+    if (!successor) {
+      await tx.gameGroup.delete({ where: { id: groupId } });
+      return { removed: true, wasAdmin: true, groupDeleted: true } as const;
+    }
+
+    await tx.gameGroupMember.update({
+      where: { groupId_userId: { groupId, userId: successor.userId } },
+      data: { role: "admin" },
+    });
+
+    return {
+      removed: true,
+      wasAdmin: true,
+      groupDeleted: false,
+      newAdmin: successor,
+    } as const;
+  });
+}
+
+/**
  * Delete a game group and all its members (cascade).
  */
 export async function deleteGroup(groupId: number) {

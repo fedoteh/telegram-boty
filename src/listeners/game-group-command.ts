@@ -8,6 +8,8 @@ import { getGroup } from "../db/queries/game-groups.js";
  * this listener checks if a game group with that name exists
  * in the current chat and pings all members.
  *
+ * Supports `/<group> help` to show usage for that specific group.
+ *
  * This must be registered AFTER all other command listeners
  * so it doesn't intercept known commands like /create, /add, etc.
  */
@@ -38,9 +40,17 @@ const gameGroupCommandListener = (bot: Bot) => {
     // Skip known built-in commands
     const builtInCommands = new Set([
       "create", "add", "rm", "delete", "list",
-      "gta", "stats", "start", "help",
+      "gta", "stats", "start", "help", "boty",
     ]);
     if (builtInCommands.has(commandName)) {
+      await next();
+      return;
+    }
+
+    // Game groups only exist in group chats — in DMs, let the message
+    // fall through to other middleware (there's nothing to summon).
+    const chatType = ctx.chat?.type;
+    if (chatType !== "group" && chatType !== "supergroup") {
       await next();
       return;
     }
@@ -51,6 +61,29 @@ const gameGroupCommandListener = (bot: Bot) => {
     if (!group) {
       // Not a game group command — pass to next middleware
       await next();
+      return;
+    }
+
+    // Parse args after the command
+    const args = text
+      .replace(/^\/[a-zA-Z0-9_]+(@\S+)?\s*/, "")
+      .trim()
+      .toLowerCase();
+
+    if (args === "help") {
+      const displayName = group.displayName ?? group.name;
+      const helpMessage =
+        `🎮 <b>${displayName}</b> — cómo se usa\n\n` +
+        `• <code>/${group.name}</code> — convoca a todos los miembros del grupo\n` +
+        `• <code>/${group.name} help</code> — muestra este mensaje\n\n` +
+        `<b>Administrar el grupo:</b>\n` +
+        `• <code>/add ${group.name} @user1 @user2</code> — agregar miembros\n` +
+        `• <code>/rm ${group.name} me</code> — salir del grupo\n` +
+        `• <code>/rm ${group.name} @user</code> — sacar a alguien (solo admin)\n` +
+        `• <code>/delete ${group.name}</code> — eliminar el grupo (solo admin)\n\n` +
+        `Escribí <code>/boty help</code> para ver todos los comandos disponibles.`;
+
+      await ctx.reply(helpMessage, { parse_mode: "HTML" });
       return;
     }
 
@@ -74,3 +107,4 @@ const gameGroupCommandListener = (bot: Bot) => {
 };
 
 export default gameGroupCommandListener;
+

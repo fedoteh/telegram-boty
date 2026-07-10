@@ -9,6 +9,7 @@ import messageListener from "./message.js";
 import editedMessageListener from "./edited_message.js";
 import statsListener from "./stats.js";
 import gtaListener from "./gta.js";
+import botyListener from "./boty.js";
 import gameGroupCommandListener from "./game-group-command.js";
 
 export const registerListeners = (bot: Bot, config: LoadedConfig) => {
@@ -20,6 +21,7 @@ export const registerListeners = (bot: Bot, config: LoadedConfig) => {
   listListener(bot);
   gtaListener(bot);
   statsListener(bot, config);
+  botyListener(bot);
 
   // Dynamic game group commands (must be after all known commands)
   gameGroupCommandListener(bot);
@@ -28,3 +30,4 @@ export const registerListeners = (bot: Bot, config: LoadedConfig) => {
   messageListener(bot);
   editedMessageListener(bot);
 };
+

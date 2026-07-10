@@ -1,5 +1,11 @@
 import type { Bot } from "grammy";
-import { getGroup, removeMember, isGroupAdmin } from "../db/queries/game-groups.js";
+import {
+  getGroup,
+  removeMember,
+  isGroupAdmin,
+  removeMemberWithSuccession,
+} from "../db/queries/game-groups.js";
+import { ensureGroupChat } from "../utils/chat-type.js";
 
 /**
  * /rm <groupName> me        — remove yourself from a group
@@ -7,6 +13,8 @@ import { getGroup, removeMember, isGroupAdmin } from "../db/queries/game-groups.
  */
 const rmListener = (bot: Bot) => {
   bot.command("rm", async (ctx) => {
+    if (!(await ensureGroupChat(ctx))) return;
+
     const chatId = ctx.chat?.id;
     const callerId = ctx.from?.id;
     if (!chatId || !callerId) return;
@@ -46,31 +54,41 @@ const rmListener = (bot: Bot) => {
       return;
     }
 
-    // Case 1: "/rm <group> me" — remove yourself
+    // Case 1: "/rm <group> me" — remove yourself (anyone, including admin)
     if (target.toLowerCase() === "me") {
-      const callerIsAdmin = await isGroupAdmin(group.id, BigInt(callerId));
+      const result = await removeMemberWithSuccession(group.id, BigInt(callerId));
 
-      if (callerIsAdmin) {
+      if (!result.removed) {
         await ctx.reply(
-          `No podés salir del grupo *${groupName}* porque sos el admin 👑\n\nSi querés eliminarlo usá \`/delete ${groupName}\``,
+          `No estás en el grupo *${groupName}* 🤔`,
           { parse_mode: "Markdown" },
         );
         return;
       }
 
-      const removed = await removeMember(group.id, BigInt(callerId));
-
-      if (removed) {
+      if (result.wasAdmin && result.groupDeleted) {
         await ctx.reply(
-          `✅ Te saqué del grupo *${groupName}*. Chau! 👋`,
+          `👑 Eras el único miembro de *${groupName}*, así que borré el grupo. Chau! 👋`,
           { parse_mode: "Markdown" },
         );
-      } else {
-        await ctx.reply(
-          `No estás en el grupo *${groupName}* 🤔`,
-          { parse_mode: "Markdown" },
-        );
+        return;
       }
+
+      if (result.wasAdmin && result.newAdmin) {
+        const newAdminMention = result.newAdmin.username
+          ? `@${result.newAdmin.username}`
+          : `usuario #${result.newAdmin.userId}`;
+        await ctx.reply(
+          `✅ Te saqué del grupo *${groupName}*. Chau! 👋\n👑 ${newAdminMention} queda como nuevo admin.`,
+          { parse_mode: "Markdown" },
+        );
+        return;
+      }
+
+      await ctx.reply(
+        `✅ Te saqué del grupo *${groupName}*. Chau! 👋`,
+        { parse_mode: "Markdown" },
+      );
       return;
     }
 
