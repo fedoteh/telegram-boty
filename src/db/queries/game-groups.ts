@@ -53,22 +53,93 @@ export async function listGroups(chatId: bigint) {
   });
 }
 
+export type AddMemberResult =
+  | { status: "added"; userId: bigint; username: string | null }
+  | { status: "duplicate"; userId: bigint; username: string | null }
+  | { status: "reconciled"; oldUserId: bigint; newUserId: bigint; username: string | null; role: string };
+
 /**
  * Add one or more members to an existing game group.
- * Silently skips users that are already members (upsert).
+ *
+ * Dedup rules (in order of precedence):
+ *   1. If a member with the same lowercase username already exists in the
+ *      group, do NOT create a duplicate row.
+ *   2. If that existing member is a placeholder (negative userId) and the new
+ *      user has a real userId, reconcile: replace the placeholder record with
+ *      the real userId while preserving the existing role. This lets a real
+ *      Telegram user "claim" a placeholder that was created when the bot
+ *      couldn't resolve their @handle.
+ *   3. Otherwise fall back to upserting by (groupId, userId).
  */
 export async function addMembers(
   groupId: number,
   users: { userId: bigint; username?: string }[],
-) {
+): Promise<AddMemberResult[]> {
   const prisma = getPrisma();
-  const operations = users.map((u) =>
-    prisma.gameGroupMember.upsert({
-      where: {
-        groupId_userId: { groupId, userId: u.userId },
-      },
+
+  const existing = await prisma.gameGroupMember.findMany({
+    where: { groupId },
+    select: { userId: true, username: true, role: true },
+  });
+
+  const byLowerUsername = new Map<string, { userId: bigint; role: string }>();
+  for (const m of existing) {
+    if (m.username) {
+      byLowerUsername.set(m.username.toLowerCase(), { userId: m.userId, role: m.role });
+    }
+  }
+
+  const results: AddMemberResult[] = [];
+
+  for (const u of users) {
+    const usernameLower = u.username?.toLowerCase();
+    const collision = usernameLower ? byLowerUsername.get(usernameLower) : undefined;
+
+    if (collision) {
+      const existingIsPlaceholder = collision.userId < 0n;
+      const newIsReal = u.userId > 0n;
+      const sameId = collision.userId === u.userId;
+
+      if (sameId) {
+        results.push({ status: "duplicate", userId: u.userId, username: u.username ?? null });
+        continue;
+      }
+
+      if (existingIsPlaceholder && newIsReal) {
+        // Reconcile: swap placeholder record for real user, keep role.
+        await prisma.$transaction([
+          prisma.gameGroupMember.delete({
+            where: { groupId_userId: { groupId, userId: collision.userId } },
+          }),
+          prisma.gameGroupMember.create({
+            data: {
+              groupId,
+              userId: u.userId,
+              username: u.username ?? null,
+              role: collision.role,
+            },
+          }),
+        ]);
+        byLowerUsername.set(usernameLower!, { userId: u.userId, role: collision.role });
+        results.push({
+          status: "reconciled",
+          oldUserId: collision.userId,
+          newUserId: u.userId,
+          username: u.username ?? null,
+          role: collision.role,
+        });
+        continue;
+      }
+
+      // Different userIds but same username, and we can't safely reconcile
+      // (e.g. two placeholders or existing real vs. new placeholder). Skip.
+      results.push({ status: "duplicate", userId: u.userId, username: u.username ?? null });
+      continue;
+    }
+
+    await prisma.gameGroupMember.upsert({
+      where: { groupId_userId: { groupId, userId: u.userId } },
       update: {
-        // Only update username if provided, preserve existing role
         ...(u.username ? { username: u.username } : {}),
       },
       create: {
@@ -77,10 +148,15 @@ export async function addMembers(
         username: u.username ?? null,
         role: "member",
       },
-    }),
-  );
+    });
 
-  return prisma.$transaction(operations);
+    if (usernameLower) {
+      byLowerUsername.set(usernameLower, { userId: u.userId, role: "member" });
+    }
+    results.push({ status: "added", userId: u.userId, username: u.username ?? null });
+  }
+
+  return results;
 }
 
 /**

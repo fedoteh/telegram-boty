@@ -78,6 +78,8 @@ const addListener = (bot: Bot) => {
     }
 
     const usersToAdd: { userId: bigint; username?: string }[] = [];
+    const callerId = ctx.from?.id;
+    const callerUsername = ctx.from?.username;
 
     for (const entity of mentionEntities) {
       if (entity.type === "text_mention" && entity.user) {
@@ -89,7 +91,17 @@ const addListener = (bot: Bot) => {
         const username = text
           .substring(entity.offset + 1, entity.offset + entity.length)
           .trim();
-        if (username) {
+        if (!username) continue;
+
+        // If the caller is tagging themselves, use their real Telegram userId
+        // instead of a placeholder — otherwise we'd create a phantom row.
+        if (
+          callerId !== undefined &&
+          callerUsername &&
+          username.toLowerCase() === callerUsername.toLowerCase()
+        ) {
+          usersToAdd.push({ userId: BigInt(callerId), username });
+        } else {
           usersToAdd.push({
             userId: usernameToPlaceholderId(username),
             username,
@@ -103,13 +115,30 @@ const addListener = (bot: Bot) => {
       return;
     }
 
-    await addMembers(group.id, usersToAdd);
+    const results = await addMembers(group.id, usersToAdd);
 
-    const names = usersToAdd.map((u) => `@${u.username}`).join(", ");
-    await ctx.reply(
-      `✅ Agregué a ${names} al grupo *${groupName}*`,
-      { parse_mode: "Markdown" },
+    const addedOrReconciled = results.filter(
+      (r) => r.status === "added" || r.status === "reconciled",
     );
+    const duplicates = results.filter((r) => r.status === "duplicate");
+
+    const lines: string[] = [];
+
+    if (addedOrReconciled.length > 0) {
+      const names = addedOrReconciled
+        .map((r) => `@${r.username ?? "?"}`)
+        .join(", ");
+      lines.push(`✅ Agregué a ${names} al grupo *${groupName}*`);
+    }
+
+    if (duplicates.length > 0) {
+      const names = duplicates.map((r) => `@${r.username ?? "?"}`).join(", ");
+      lines.push(`ℹ️ Ya estaban en *${groupName}*: ${names}`);
+    }
+
+    await ctx.reply(lines.join("\n") || "No hice ningún cambio 🤔", {
+      parse_mode: "Markdown",
+    });
   });
 };
 
